@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+
+{% block title %}Crop Yield Prediction | Smart Agriculture{% endblock %}
+{% block page_title %}Crop Yield Prediction Hub{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h4 class="fw-bold mb-1">Crop Yield Forecasting Engine</h4>
+        <p class="text-muted mb-0">Estimate expected agricultural output in kg/hectare using Simple Linear Regression (Rainfall-driven) or Multiple Linear Regression (Full Multi-Factor response).</p>
+    </div>
+</div>
+
+<!-- Tabs Navigation -->
+<ul class="nav nav-pills mb-4" id="yieldTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link {% if active_tab == 'simple' %}active bg-success{% endif %}" id="slr-tab" data-bs-toggle="pill" data-bs-target="#slr-content" type="button" role="tab">
+            <i class="fa-solid fa-chart-line me-1"></i> Algorithm 1: Simple Linear Regression
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link {% if active_tab == 'multiple' %}active bg-success{% endif %}" id="mlr-tab" data-bs-toggle="pill" data-bs-target="#mlr-content" type="button" role="tab">
+            <i class="fa-solid fa-chart-diagram me-1"></i> Algorithm 2: Multiple Linear Regression
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="yieldTabsContent">
+    <!-- ======================================================== -->
+    <!-- TAB 1: SIMPLE LINEAR REGRESSION                          -->
+    <!-- ======================================================== -->
+    <div class="tab-pane fade {% if active_tab == 'simple' %}show active{% endif %}" id="slr-content" role="tabpanel">
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="agri-card mb-0">
+                    <div class="agri-card-header">
+                        <h6 class="agri-card-title">
+                            <i class="fa-solid fa-cloud-rain text-success"></i> Rainfall Input
+                        </h6>
+                        <span class="badge bg-success-subtle text-success">1 Feature</span>
+                    </div>
+
+                    <form action="{{ url_for('yield_prediction') }}" method="POST">
+                        <input type="hidden" name="model_mode" value="simple">
+                        <div class="mb-4">
+                            <label class="form-label">Seasonal Rainfall Volume (mm)</label>
+                            <div class="input-group">
+                                <input type="number" step="0.1" name="rainfall" class="form-control" value="{{ slr_input.rainfall }}" min="10" max="500" required>
+                                <span class="input-group-text">mm</span>
+                            </div>
+                            <small class="text-muted">Enter anticipated precipitation for the growing season (typical: 50 - 300 mm).</small>
+                        </div>
+
+                        <div class="d-flex gap-2 mb-4">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.querySelector('[name=rainfall]').value = 100">Low (100 mm)</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.querySelector('[name=rainfall]').value = 180">Medium (180 mm)</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.querySelector('[name=rainfall]').value = 260">High (260 mm)</button>
+                        </div>
+
+                        <button type="submit" class="btn btn-agri w-100 py-2">
+                            <i class="fa-solid fa-calculator me-1"></i> Calculate Predicted Yield
+                        </button>
+                    </form>
+
+                    <!-- Evaluation Metrics -->
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="text-uppercase text-muted fw-bold mb-2" style="font-size: 0.72rem;">Simple Linear Regression Metrics (Test Set)</h6>
+                        <div class="row text-center g-2">
+                            <div class="col-3">
+                                <div class="p-2 border rounded bg-light">
+                                    <div class="fw-bold text-dark">{{ slr_metrics.metrics.R2_Score if slr_metrics.metrics else '0.966' }}</div>
+                                    <small class="text-muted" style="font-size: 0.7rem;">R² Score</small>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="p-2 border rounded bg-light">
+                                    <div class="fw-bold text-dark">{{ slr_metrics.metrics.RMSE if slr_metrics.metrics else '218.5' }}</div>
+                                    <small class="text-muted" style="font-size: 0.7rem;">RMSE</small>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="p-2 border rounded bg-light">
+                                    <div class="fw-bold text-dark">{{ slr_metrics.metrics.MAE if slr_metrics.metrics else '175.2' }}</div>
+                                    <small class="text-muted" style="font-size: 0.7rem;">MAE</small>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="p-2 border rounded bg-light">
+                                    <div class="fw-bold text-dark">{{ slr_metrics.metrics.MSE if slr_metrics.metrics else '47746' }}</div>
+                                    <small class="text-muted" style="font-size: 0.7rem;">MSE</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                {% if slr_result %}
+                <div class="prediction-highlight-card mb-4">
+                    <span class="badge bg-light text-success fw-bold px-3 py-1 mb-2">PREDICTED CROP YIELD (SLR)</span>
+                    <h3>{{ slr_result.predicted_yield_kg_per_ha }} <span style="font-size: 1.25rem; font-weight: 500;">kg / hectare</span></h3>
+                    <p class="mb-2 text-white-50">Equivalent to approximately <strong>{{ slr_result.predicted_yield_tons_per_ha }} metric tons/ha</strong>.</p>
+                    <small class="badge bg-white-50 text-white" style="font-family: monospace;">{{ slr_result.equation }}</small>
+                </div>
+                {% endif %}
+
+                <!-- Regression Graph -->
+                <div class="agri-card mb-0">
+                    <div class="agri-card-header">
+                        <h6 class="agri-card-title">
+                            <i class="fa-solid fa-chart-scatter text-success"></i> Linear Regression Graph (Actual vs Predicted)
+                        </h6>
+                    </div>
+                    <div class="text-center">
+                        <img src="{{ url_for('static', filename='img/charts/slr_regression_graph.png') }}"
+                             alt="Simple Linear Regression Plot"
+                             class="img-fluid rounded border shadow-sm"
+                             style="max-height: 380px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 2: MULTIPLE LINEAR REGRESSION                        -->
+    <!-- ======================================================== -->
+    <div class="tab-pane fade {% if active_tab == 'multiple' %}show active{% endif %}" id="mlr-content" role="tabpanel">
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="agri-card mb-0">
+                    <div class="agri-card-header">
+                        <h6 class="agri-card-title">
+                            <i class="fa-solid fa-sliders text-success"></i> Multi-Variable Input (7 Factors)
+                        </h6>
+                        <span class="badge bg-success-subtle text-success">StandardScaled</span>
+                    </div>
+
+                    <form action="{{ url_for('yield_prediction') }}" method="POST">
+                        <input type="hidden" name="model_mode" value="multiple">
+
+                        <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.72rem;">Meteorological Features</h6>
+                        <div class="row g-2 mb-3">
+                            <div class="col-4">
+                                <label class="form-label">Rainfall (mm)</label>
+                                <input type="number" step="0.1" name="rainfall" class="form-control" value="{{ mlr_input.rainfall }}" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Temp (°C)</label>
+                                <input type="number" step="0.1" name="temperature" class="form-control" value="{{ mlr_input.temperature }}" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Humidity (%)</label>
+                                <input type="number" step="0.1" name="humidity" class="form-control" value="{{ mlr_input.humidity }}" min="0" max="100" required>
+                            </div>
+                        </div>
+
+                        <h6 class="text-muted text-uppercase mb-2 pt-2" style="font-size: 0.72rem;">Soil Chemistry</h6>
+                        <div class="mb-3">
+                            <label class="form-label">Soil pH Level (0 - 14)</label>
+                            <input type="number" step="0.1" name="ph" class="form-control" value="{{ mlr_input.ph }}" min="0" max="14" required>
+                        </div>
+
+                        <div class="row g-2 mb-4">
+                            <div class="col-4">
+                                <label class="form-label">Nitrogen (N)</label>
+                                <input type="number" step="0.1" name="nitrogen" class="form-control" value="{{ mlr_input.nitrogen }}" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Phosphorus (P)</label>
+                                <input type="number" step="0.1" name="phosphorus" class="form-control" value="{{ mlr_input.phosphorus }}" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Potassium (K)</label>
+                                <input type="number" step="0.1" name="potassium" class="form-control" value="{{ mlr_input.potassium }}" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-agri w-100 py-2">
+                            <i class="fa-solid fa-calculator me-1"></i> Predict Comprehensive Yield
+                        </button>
+                    </form>
+
+                    <!-- Evaluation Metrics -->
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="text-uppercase text-muted fw-bold mb-2" style="font-size: 0.72rem;">Multiple Linear Regression Metrics (Test Set)</h6>
+                        <div class="row text-center g-2">
+                            <div class="col-3">
+                                <div class="p-2 border rounded bg-light">
+                                    <div class="fw-bold text-dark">{{ mlr_metrics.metrics.R2_Score if mlr_metrics.metrics else '0.7419' }}</div>
+                                    <small class="text-muted" style="font-size: 0.7rem;">R² Score</small>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="p-2 border rounded bg-light">
+                                    <div class="fw-bold text-dark">{{ mlr_metrics.metrics.RMSE if mlr_metrics.metrics else '397.4' }}</div>
+                                    <small class="text-muted" style="font-size: 0.7rem;">RMSE</small>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="p-2 border rounded bg-light">
+                                    <div class="fw-bold text-dark">{{ mlr_metrics.metrics.MAE if mlr_metrics.metrics else '326.6' }}</div>
+                                    <small class="text-muted" style="font-size: 0.7rem;">MAE</small>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="p-2 border rounded bg-light">
+                                    <div class="fw-bold text-dark">{{ mlr_metrics.metrics.MSE if mlr_metrics.metrics else '157910' }}</div>
+                                    <small class="text-muted" style="font-size: 0.7rem;">MSE</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                {% if mlr_result %}
+                <div class="prediction-highlight-card mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-light text-success fw-bold px-3 py-1">PREDICTED CROP YIELD (MLR)</span>
+                        <span class="badge bg-{{ mlr_result.category_badge }} px-3 py-1">{{ mlr_result.yield_category }}</span>
+                    </div>
+                    <h3>{{ mlr_result.predicted_yield_kg_per_ha }} <span style="font-size: 1.25rem; font-weight: 500;">kg / hectare</span></h3>
+                    <p class="mb-0 text-white-50">Estimated output: <strong>{{ mlr_result.predicted_yield_tons_per_ha }} tons/hectare</strong> based on multi-factor agronomic interactions.</p>
+                </div>
+                {% endif %}
+
+                <!-- Residuals Plot -->
+                <div class="agri-card mb-0">
+                    <div class="agri-card-header">
+                        <h6 class="agri-card-title">
+                            <i class="fa-solid fa-chart-line text-success"></i> Multiple Regression Residual Analysis
+                        </h6>
+                    </div>
+                    <div class="text-center">
+                        <img src="{{ url_for('static', filename='img/charts/mlr_residuals_graph.png') }}"
+                             alt="Multiple Regression Residuals"
+                             class="img-fluid rounded border shadow-sm"
+                             style="max-height: 380px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

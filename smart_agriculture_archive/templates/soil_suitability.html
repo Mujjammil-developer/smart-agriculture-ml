@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}Soil Suitability Analysis | Smart Agriculture{% endblock %}
+{% block page_title %}Logistic Regression Soil Health Classifier{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h4 class="fw-bold mb-1">Soil Suitability Diagnostic System</h4>
+        <p class="text-muted mb-0">Evaluate whether soil conditions meet threshold criteria for intensive crop cultivation using Logistic Regression binary classification with probability scoring.</p>
+    </div>
+</div>
+
+<!-- Quick Test Presets -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="agri-card p-3 mb-0 bg-light">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <span class="fw-bold text-dark" style="font-size: 0.88rem;">
+                    <i class="fa-solid fa-wand-magic-sparkles text-success me-1"></i> Quick Test Soil Profiles:
+                </span>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="fillSample('optimal_soil')">
+                        <i class="fa-solid fa-circle-check me-1"></i> Balanced / Optimal Soil
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="fillSample('acidic_soil')">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Acidic Nutrient-Deficient Soil
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="fillSample('alkaline_soil')">
+                        <i class="fa-solid fa-fire me-1"></i> Alkaline Arid Soil
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Input Form -->
+    <div class="col-lg-5">
+        <div class="agri-card mb-0">
+            <div class="agri-card-header">
+                <h6 class="agri-card-title">
+                    <i class="fa-solid fa-vial-circle-check text-success"></i> Soil Assessment Inputs
+                </h6>
+                <span class="badge bg-success-subtle text-success">Logistic Regression</span>
+            </div>
+
+            <form action="{{ url_for('soil_suitability') }}" method="POST">
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Soil pH (0 - 14)</label>
+                        <input type="number" step="0.1" name="ph" id="ph" class="form-control" value="{{ inputs.ph }}" min="0" max="14" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Soil Moisture (%)</label>
+                        <input type="number" step="0.1" name="moisture" id="moisture" class="form-control" value="{{ inputs.moisture }}" min="0" max="100" required>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <label class="form-label">Nitrogen (N)</label>
+                        <input type="number" step="0.1" name="nitrogen" id="nitrogen" class="form-control" value="{{ inputs.nitrogen }}" min="0" required>
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">Phosphorus (P)</label>
+                        <input type="number" step="0.1" name="phosphorus" id="phosphorus" class="form-control" value="{{ inputs.phosphorus }}" min="0" required>
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">Potassium (K)</label>
+                        <input type="number" step="0.1" name="potassium" id="potassium" class="form-control" value="{{ inputs.potassium }}" min="0" required>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Ambient Soil / Bed Temperature (°C)</label>
+                    <input type="number" step="0.1" name="temperature" id="temperature" class="form-control" value="{{ inputs.temperature }}" required>
+                </div>
+
+                <button type="submit" class="btn btn-agri w-100 py-2">
+                    <i class="fa-solid fa-shield-halved me-1"></i> Evaluate Soil Suitability
+                </button>
+            </form>
+
+            <!-- Metrics -->
+            <div class="mt-4 pt-3 border-top">
+                <h6 class="text-uppercase text-muted fw-bold mb-2" style="font-size: 0.72rem;">Logistic Regression Model Metrics</h6>
+                <div class="d-flex justify-content-between text-center">
+                    <div>
+                        <div class="fw-bold text-dark">{{ metrics.metrics.Accuracy if metrics.metrics else '63.3' }}%</div>
+                        <small class="text-muted" style="font-size: 0.7rem;">Accuracy</small>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">{{ metrics.metrics.Precision if metrics.metrics else '66.0' }}%</div>
+                        <small class="text-muted" style="font-size: 0.7rem;">Precision</small>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">{{ metrics.metrics.Recall if metrics.metrics else '78.4' }}%</div>
+                        <small class="text-muted" style="font-size: 0.7rem;">Recall</small>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">{{ metrics.metrics.F1_Score if metrics.metrics else '71.7' }}%</div>
+                        <small class="text-muted" style="font-size: 0.7rem;">F1-Score</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results & Diagnostics -->
+    <div class="col-lg-7">
+        {% if result %}
+        <div class="agri-card mb-4">
+            <div class="agri-card-header">
+                <h6 class="agri-card-title">
+                    <i class="fa-solid fa-clipboard-check text-success"></i> Suitability Diagnostic Result
+                </h6>
+                <span class="badge bg-{{ result.status_badge }} px-3 py-1 fs-6">{{ result.status_text }}</span>
+            </div>
+
+            <!-- Probability Gauge / Bar -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="fw-bold text-dark" style="font-size: 0.88rem;">Suitability Probability</span>
+                    <span class="fw-bold text-{{ result.status_badge }}">{{ result.suitability_percentage }}%</span>
+                </div>
+                <div class="progress" style="height: 12px; border-radius: 6px;">
+                    <div class="progress-bar bg-{{ result.status_badge }}"
+                         role="progressbar"
+                         style="width: {{ result.suitability_percentage }}%;"
+                         aria-valuenow="{{ result.suitability_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.72rem;">
+                    <span>Unsuitable (&lt; 50%)</span>
+                    <span>Suitable (&ge; 50%)</span>
+                </div>
+            </div>
+
+            <!-- Agronomic Recommendations -->
+            <h6 class="fw-bold text-dark mb-2">Agronomic Diagnosis & Remediation Advice:</h6>
+            <ul class="list-group list-group-flush mb-0">
+                {% for tip in result.recommendations %}
+                <li class="list-group-item px-0 py-2 d-flex align-items-start gap-2" style="font-size: 0.88rem;">
+                    <i class="fa-solid fa-circle-check text-success mt-1"></i>
+                    <span>{{ tip }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Confusion Matrix Visualizer -->
+        <div class="agri-card mb-0">
+            <div class="agri-card-header">
+                <h6 class="agri-card-title">
+                    <i class="fa-solid fa-table-cells text-success"></i> Classification Confusion Matrix
+                </h6>
+                <small class="text-muted">Calculated on 20% Test Split</small>
+            </div>
+            <div class="text-center">
+                <img src="{{ url_for('static', filename='img/charts/logistic_confusion_matrix.png') }}"
+                     alt="Logistic Regression Confusion Matrix"
+                     class="img-fluid rounded border shadow-sm"
+                     style="max-height: 320px;">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

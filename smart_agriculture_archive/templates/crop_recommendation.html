@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}Crop Recommendation | Smart Agriculture{% endblock %}
+{% block page_title %}KNN Crop Recommendation System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h4 class="fw-bold mb-1">Crop Recommendation Engine</h4>
+        <p class="text-muted mb-0">Recommends the top 3 best-suited crops using K-Nearest Neighbors (KNN) classification with multi-dimensional feature scaling.</p>
+    </div>
+</div>
+
+<!-- Quick Preset Bar -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="agri-card p-3 mb-0 bg-light">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <span class="fw-bold text-dark" style="font-size: 0.88rem;">
+                    <i class="fa-solid fa-wand-magic-sparkles text-success me-1"></i> Quick Test Presets:
+                </span>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="fillSample('rice')">
+                        <i class="fa-solid fa-bowl-rice me-1"></i> Rice (Wetland)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="fillSample('chickpea')">
+                        <i class="fa-solid fa-cookie-bite me-1"></i> Chickpea (Dry Pulse)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="fillSample('coffee')">
+                        <i class="fa-solid fa-mug-hot me-1"></i> Coffee (Hill Plantation)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="fillSample('apple')">
+                        <i class="fa-solid fa-apple-whole me-1"></i> Apple (High Potassium Orchard)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Input Form -->
+    <div class="col-lg-5">
+        <div class="agri-card mb-0">
+            <div class="agri-card-header">
+                <h6 class="agri-card-title">
+                    <i class="fa-solid fa-sliders text-success"></i> Field Agronomic Parameters
+                </h6>
+                <span class="badge bg-success-subtle text-success">KNN (k=5)</span>
+            </div>
+
+            <form action="{{ url_for('crop_recommendation') }}" method="POST">
+                <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.72rem; letter-spacing: 0.05em;">Soil Chemistry</h6>
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <label class="form-label">Nitrogen (N)</label>
+                        <input type="number" step="0.1" name="nitrogen" id="nitrogen" class="form-control" value="{{ inputs.N }}" required>
+                        <small class="text-muted" style="font-size: 0.7rem;">0 - 140 mg/kg</small>
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">Phosphorus (P)</label>
+                        <input type="number" step="0.1" name="phosphorus" id="phosphorus" class="form-control" value="{{ inputs.P }}" required>
+                        <small class="text-muted" style="font-size: 0.7rem;">5 - 145 mg/kg</small>
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">Potassium (K)</label>
+                        <input type="number" step="0.1" name="potassium" id="potassium" class="form-control" value="{{ inputs.K }}" required>
+                        <small class="text-muted" style="font-size: 0.7rem;">5 - 205 mg/kg</small>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Soil pH Level (0 - 14)</label>
+                    <input type="number" step="0.1" name="ph" id="ph" class="form-control" value="{{ inputs.ph }}" min="0" max="14" required>
+                    <small class="text-muted" style="font-size: 0.7rem;">Neutral: 6.5 - 7.0 &bull; Acidic: &lt; 6.0 &bull; Alkaline: &gt; 7.8</small>
+                </div>
+
+                <h6 class="text-muted text-uppercase mb-2 pt-2" style="font-size: 0.72rem; letter-spacing: 0.05em;">Micro-Climate Factors</h6>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Temperature (°C)</label>
+                        <input type="number" step="0.1" name="temperature" id="temperature" class="form-control" value="{{ inputs.temperature }}" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Relative Humidity (%)</label>
+                        <input type="number" step="0.1" name="humidity" id="humidity" class="form-control" value="{{ inputs.humidity }}" min="0" max="100" required>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Precipitation / Rainfall (mm)</label>
+                    <input type="number" step="0.1" name="rainfall" id="rainfall" class="form-control" value="{{ inputs.rainfall }}" min="0" required>
+                    <small class="text-muted" style="font-size: 0.7rem;">Seasonal rainfall volume (20 - 300 mm)</small>
+                </div>
+
+                <button type="submit" class="btn btn-agri w-100 py-2">
+                    <i class="fa-solid fa-wheat-awn me-2"></i> Predict Suitable Crops
+                </button>
+            </form>
+
+            <!-- Algorithm Metrics Pill Box -->
+            <div class="mt-4 pt-3 border-top">
+                <small class="fw-bold text-uppercase text-muted d-block mb-2" style="font-size: 0.7rem;">KNN Model Evaluation Metrics (Test Set)</small>
+                <div class="d-flex justify-content-between text-center">
+                    <div>
+                        <div class="fw-bold text-dark">{{ metrics.metrics.Accuracy if metrics.metrics else '98.6' }}%</div>
+                        <small class="text-muted" style="font-size: 0.7rem;">Accuracy</small>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">{{ metrics.metrics.Precision if metrics.metrics else '98.7' }}%</div>
+                        <small class="text-muted" style="font-size: 0.7rem;">Precision</small>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">{{ metrics.metrics.Recall if metrics.metrics else '98.6' }}%</div>
+                        <small class="text-muted" style="font-size: 0.7rem;">Recall</small>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">{{ metrics.metrics.F1_Score if metrics.metrics else '98.6' }}%</div>
+                        <small class="text-muted" style="font-size: 0.7rem;">F1-Score</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendation Output -->
+    <div class="col-lg-7">
+        {% if result %}
+        <div class="agri-card mb-4 bg-white">
+            <div class="agri-card-header">
+                <h6 class="agri-card-title">
+                    <i class="fa-solid fa-award text-success"></i> Top 3 Recommended Crops
+                </h6>
+                <span class="badge bg-success">Prediction Success</span>
+            </div>
+
+            <div class="row g-3">
+                {% for crop in result.top_recommendations %}
+                <div class="col-12">
+                    <div class="crop-card {% if crop.rank == 1 %}rank-1{% endif %}">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="crop-icon-bubble">
+                                <i class="fa-solid {{ crop.icon }}"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <h5 class="fw-bold mb-0 text-dark">
+                                        #{{ crop.rank }} {{ crop.crop_name }}
+                                    </h5>
+                                    <span class="badge {% if crop.rank == 1 %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-3 py-1">
+                                        {{ crop.confidence_percent }}% Match
+                                    </span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-light text-dark border me-1">{{ crop.category }}</span>
+                                    <span class="badge bg-light text-dark border"><i class="fa-regular fa-calendar me-1"></i> {{ crop.season }}</span>
+                                </div>
+                                <p class="text-muted mb-2" style="font-size: 0.88rem;">{{ crop.description }}</p>
+
+                                <!-- Match confidence progress bar -->
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar {% if crop.rank == 1 %}bg-success{% elif crop.rank == 2 %}bg-primary{% else %}bg-info{% endif %}"
+                                         role="progressbar"
+                                         style="width: {{ crop.confidence_percent }}%;"
+                                         aria-valuenow="{{ crop.confidence_percent }}" aria-valuemin="0" aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <!-- Default Empty State -->
+        <div class="agri-card text-center py-5 mb-0">
+            <div class="py-4">
+                <i class="fa-solid fa-wheat-awn fa-4x text-success-subtle mb-3"></i>
+                <h5 class="fw-bold text-dark">Ready for Crop Recommendation</h5>
+                <p class="text-muted mb-4" style="max-width: 440px; margin: 0 auto;">
+                    Provide your soil chemistry (N-P-K, pH) and micro-climate conditions (temperature, humidity, rainfall) on the left to compute the top 3 optimal crops.
+                </p>
+                <button type="button" class="btn btn-outline-success" onclick="fillSample('rice')">
+                    <i class="fa-solid fa-play me-1"></i> Fill Sample & Explore
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,245 @@
+{
+    "simple_linear_regression": {
+        "name": "Simple Linear Regression",
+        "type": "Regression",
+        "features": [
+            "Rainfall (mm)"
+        ],
+        "target": "Crop Yield (kg/ha)",
+        "coefficient": 15.807193775750465,
+        "intercept": 1208.4599667950797,
+        "metrics": {
+            "MAE": 175.25,
+            "MSE": 47746.61,
+            "RMSE": 218.51,
+            "R2_Score": 0.966
+        }
+    },
+    "multiple_linear_regression": {
+        "name": "Multiple Linear Regression",
+        "type": "Regression",
+        "features": [
+            "rainfall",
+            "temperature",
+            "humidity",
+            "ph",
+            "nitrogen",
+            "phosphorus",
+            "potassium"
+        ],
+        "target": "Crop Yield (kg/ha)",
+        "intercept": 4358.828937500001,
+        "coefficients": {
+            "rainfall": 531.996,
+            "temperature": -45.27,
+            "humidity": 122.011,
+            "ph": -66.325,
+            "nitrogen": 300.713,
+            "phosphorus": 171.822,
+            "potassium": 154.701
+        },
+        "metrics": {
+            "MAE": 326.57,
+            "MSE": 157910.55,
+            "RMSE": 397.38,
+            "R2_Score": 0.7419
+        }
+    },
+    "logistic_regression": {
+        "name": "Logistic Regression (Soil Suitability)",
+        "type": "Classification",
+        "features": [
+            "ph",
+            "nitrogen",
+            "phosphorus",
+            "potassium",
+            "moisture",
+            "temperature"
+        ],
+        "target": "Soil Suitability (0: Unsuitable, 1: Suitable)",
+        "metrics": {
+            "Accuracy": 63.33,
+            "Precision": 66.01,
+            "Recall": 78.4,
+            "F1_Score": 71.67
+        },
+        "confusion_matrix": [
+            [
+                61,
+                86
+            ],
+            [
+                46,
+                167
+            ]
+        ],
+        "classes": [
+            "Unsuitable",
+            "Suitable"
+        ]
+    },
+    "knn_classification": {
+        "name": "K-Nearest Neighbors (KNN) Crop Recommendation",
+        "type": "Classification (Multi-class)",
+        "k_neighbors": 5,
+        "features": [
+            "N",
+            "P",
+            "K",
+            "temperature",
+            "humidity",
+            "ph",
+            "rainfall"
+        ],
+        "num_classes": 22,
+        "metrics": {
+            "Accuracy": 98.64,
+            "Precision": 98.7,
+            "Recall": 98.64,
+            "F1_Score": 98.64
+        },
+        "classes": [
+            "apple",
+            "banana",
+            "blackgram",
+            "chickpea",
+            "coconut",
+            "coffee",
+            "cotton",
+            "grapes",
+            "jute",
+            "kidneybeans",
+            "lentil",
+            "maize",
+            "mango",
+            "mothbeans",
+            "mungbean",
+            "muskmelon",
+            "orange",
+            "papaya",
+            "pigeonpeas",
+            "pomegranate",
+            "rice",
+            "watermelon"
+        ]
+    },
+    "kmeans_clustering": {
+        "name": "K-Means Clustering",
+        "type": "Unsupervised Clustering",
+        "num_clusters": 4,
+        "features": [
+            "N",
+            "P",
+            "K",
+            "temperature",
+            "humidity",
+            "ph",
+            "rainfall"
+        ],
+        "metrics": {
+            "Silhouette_Score": 0.2813,
+            "Inertia": 7811.87
+        },
+        "cluster_profiles": {
+            "0": {
+                "title": "Tropical High-Moisture Zone",
+                "means": {
+                    "N": 28.7,
+                    "P": 56.86,
+                    "K": 28.92,
+                    "temperature": 25.93,
+                    "humidity": 50.18,
+                    "ph": 6.53,
+                    "rainfall": 78.47
+                }
+            },
+            "1": {
+                "title": "High-Fertility Intensive Zone",
+                "means": {
+                    "N": 49.46,
+                    "P": 34.63,
+                    "K": 34.53,
+                    "temperature": 25.4,
+                    "humidity": 86.69,
+                    "ph": 6.49,
+                    "rainfall": 168.61
+                }
+            },
+            "2": {
+                "title": "Semi-Arid Pulse & Grain Zone",
+                "means": {
+                    "N": 24.63,
+                    "P": 133.1,
+                    "K": 200.09,
+                    "temperature": 22.98,
+                    "humidity": 87.48,
+                    "ph": 5.99,
+                    "rainfall": 91.14
+                }
+            },
+            "3": {
+                "title": "Temperate High-Mineral Orchard Zone",
+                "means": {
+                    "N": 100.87,
+                    "P": 41.21,
+                    "K": 37.2,
+                    "temperature": 25.73,
+                    "humidity": 78.14,
+                    "ph": 6.45,
+                    "rainfall": 78.86
+                }
+            }
+        }
+    },
+    "naive_bayes_classification": {
+        "name": "Gaussian Naive Bayes (Crop Category)",
+        "type": "Classification (Multi-class)",
+        "features": [
+            "N",
+            "P",
+            "K",
+            "temperature",
+            "humidity",
+            "ph",
+            "rainfall"
+        ],
+        "metrics": {
+            "Accuracy": 89.55,
+            "Precision": 90.14,
+            "Recall": 89.55,
+            "F1_Score": 89.63
+        },
+        "confusion_matrix": [
+            [
+                36,
+                4,
+                0,
+                0
+            ],
+            [
+                14,
+                46,
+                0,
+                0
+            ],
+            [
+                0,
+                6,
+                178,
+                16
+            ],
+            [
+                0,
+                0,
+                6,
+                134
+            ]
+        ],
+        "classes": [
+            "Cereals",
+            "Commercial Crops",
+            "Fruits",
+            "Pulses"
+        ]
+    }
+}

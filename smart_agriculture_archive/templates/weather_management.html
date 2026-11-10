@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+
+{% block title %}Weather Management | Smart Agriculture{% endblock %}
+{% block page_title %}Weather Observation & Climate Analytics{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <h4 class="fw-bold mb-1">Weather & Meteorological Records</h4>
+            <p class="text-muted mb-0">Track field climate conditions (Temperature, Humidity, Rainfall) powering the predictive models.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-agri" data-bs-toggle="modal" data-bs-target="#addWeatherModal">
+                <i class="fa-solid fa-plus me-1"></i> Log Weather Observation
+            </button>
+            <a href="{{ url_for('export_weather_csv') }}" class="btn btn-outline-secondary">
+                <i class="fa-solid fa-download me-1"></i> Export CSV
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Weather Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon amber">
+                <i class="fa-solid fa-temperature-half"></i>
+            </div>
+            <div>
+                <div class="stat-title">Average Temperature</div>
+                <div class="stat-value">{{ avg_temp }} <small style="font-size: 0.9rem;">°C</small></div>
+                <div class="stat-subtext text-warning"><i class="fa-solid fa-sun me-1"></i> Ambient Thermal Range</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="fa-solid fa-droplet"></i>
+            </div>
+            <div>
+                <div class="stat-title">Average Humidity</div>
+                <div class="stat-value">{{ avg_hum }} <small style="font-size: 0.9rem;">%</small></div>
+                <div class="stat-subtext text-primary"><i class="fa-solid fa-wind me-1"></i> Relative Moisture Level</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fa-solid fa-cloud-showers-heavy"></i>
+            </div>
+            <div>
+                <div class="stat-title">Total Recorded Rainfall</div>
+                <div class="stat-value">{{ total_rain }} <small style="font-size: 0.9rem;">mm</small></div>
+                <div class="stat-subtext text-success"><i class="fa-solid fa-umbrella me-1"></i> Cumulative Precipitation</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Weather Visualization Chart -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="agri-card mb-0">
+            <div class="agri-card-header">
+                <h6 class="agri-card-title">
+                    <i class="fa-solid fa-chart-area text-success"></i> Comprehensive Meteorological Visualization
+                </h6>
+                <small class="text-muted">Rainfall vs Temperature & Humidity Across Recording Stations</small>
+            </div>
+            <div style="height: 320px;">
+                <canvas id="weatherModuleChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Weather Records Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="agri-card mb-0">
+            <div class="agri-card-header">
+                <h6 class="agri-card-title">
+                    <i class="fa-solid fa-list-check text-success"></i> Weather Observation History ({{ records|length }})
+                </h6>
+            </div>
+            {% if records %}
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Station / Location</th>
+                            <th>Condition</th>
+                            <th>Temperature (°C)</th>
+                            <th>Humidity (%)</th>
+                            <th>Rainfall (mm)</th>
+                            <th>Observation Date</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records %}
+                        <tr>
+                            <td><span class="text-muted fw-bold">#{{ record.id }}</span></td>
+                            <td><strong class="text-dark">{{ record.location }}</strong></td>
+                            <td>
+                                {% if record.condition == 'Rainy' %}
+                                <span class="badge bg-primary-subtle text-primary"><i class="fa-solid fa-cloud-showers-heavy me-1"></i> Rainy</span>
+                                {% elif record.condition == 'Sunny' %}
+                                <span class="badge bg-warning-subtle text-warning"><i class="fa-solid fa-sun me-1"></i> Sunny</span>
+                                {% elif record.condition == 'Overcast' %}
+                                <span class="badge bg-secondary-subtle text-secondary"><i class="fa-solid fa-cloud me-1"></i> Overcast</span>
+                                {% else %}
+                                <span class="badge bg-info-subtle text-info"><i class="fa-solid fa-smog me-1"></i> {{ record.condition }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ record.temperature }} °C</td>
+                            <td>{{ record.humidity }}%</td>
+                            <td><span class="fw-bold text-primary">{{ record.rainfall }} mm</span></td>
+                            <td><small class="text-muted">{{ record.recorded_date.strftime('%Y-%m-%d') if record.recorded_date else '' }}</small></td>
+                            <td class="text-end">
+                                <form action="{{ url_for('delete_weather_record', record_id=record.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this weather record?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fa-solid fa-cloud-sun-rain fa-3x text-muted mb-3"></i>
+                <h6 class="text-muted">No weather observations logged yet.</h6>
+                <button class="btn btn-agri mt-2" data-bs-toggle="modal" data-bs-target="#addWeatherModal">
+                    <i class="fa-solid fa-plus me-1"></i> Add First Weather Record
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Weather Modal -->
+<div class="modal fade" id="addWeatherModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="{{ url_for('add_weather_record') }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-solid fa-cloud-sun text-success me-1"></i> Record Weather Observation
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Weather Station / Location</label>
+                        <input type="text" name="location" class="form-control" placeholder="e.g. Field Station Bravo" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Temperature (°C)</label>
+                            <input type="number" step="0.1" name="temperature" class="form-control" placeholder="e.g. 26.5" min="-20" max="60" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Humidity (%)</label>
+                            <input type="number" step="0.1" name="humidity" class="form-control" placeholder="e.g. 75" min="0" max="100" required>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Rainfall (mm)</label>
+                            <input type="number" step="0.1" name="rainfall" class="form-control" placeholder="e.g. 160" min="0" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Sky Condition</label>
+                            <select name="condition" class="form-select">
+                                <option value="Sunny">Sunny</option>
+                                <option value="Rainy">Rainy</option>
+                                <option value="Overcast">Overcast</option>
+                                <option value="Humid">Humid</option>
+                                <option value="Stormy">Stormy</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-agri">Save Observation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const rawData = [
+        {% for r in records[:15]|reverse %}
+        {
+            date: "{{ r.recorded_date.strftime('%b %d') if r.recorded_date else 'W' ~ r.id }}",
+            temp: {{ r.temperature }},
+            humidity: {{ r.humidity }},
+            rainfall: {{ r.rainfall }}
+        },
+        {% endfor %}
+    ];
+
+    if (rawData.length > 0) {
+        const ctx = document.getElementById('weatherModuleChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: rawData.map(d => d.date),
+                datasets: [
+                    {
+                        type: 'bar',
+                        label: 'Rainfall (mm)',
+                        data: rawData.map(d => d.rainfall),
+                        backgroundColor: 'rgba(2, 132, 199, 0.65)',
+                        borderColor: '#0284c7',
+                        borderWidth: 1,
+                        yAxisID: 'yRain'
+                    },
+                    {
+                        type: 'line',
+                        label: 'Temperature (°C)',
+                        data: rawData.map(d => d.temp),
+                        borderColor: '#e76f51',
+                        backgroundColor: '#e76f51',
+                        tension: 0.25,
+                        yAxisID: 'yTemp'
+                    },
+                    {
+                        type: 'line',
+                        label: 'Humidity (%)',
+                        data: rawData.map(d => d.humidity),
+                        borderColor: '#52b788',
+                        backgroundColor: '#52b788',
+                        borderDash: [5, 5],
+                        tension: 0.25,
+                        yAxisID: 'yHum'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    yRain: {
+                        type: 'linear',
+                        position: 'left',
+                        title: { display: true, text: 'Rainfall (mm)' }
+                    },
+                    yTemp: {
+                        type: 'linear',
+                        position: 'right',
+                        title: { display: true, text: 'Temp (°C)' },
+                        grid: { drawOnChartArea: false }
+                    },
+                    yHum: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

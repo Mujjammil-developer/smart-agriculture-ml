@@ -1,0 +1,368 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard | Smart Agriculture{% endblock %}
+{% block page_title %}Agricultural Intelligence Dashboard{% endblock %}
+
+{% block content %}
+<!-- Top Welcome Banner -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="agri-card mb-0" style="background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%); color: #ffffff; border: none;">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <span class="badge bg-light text-success fw-bold px-3 py-1 mb-2">PRECISION FARMING AI</span>
+                    <h2 class="fw-bold mb-2">Welcome to SmartAgri Decision Support System</h2>
+                    <p class="mb-0 text-white-50" style="max-width: 650px;">
+                        Harnessing 6 Scikit-learn Machine Learning algorithms to empower farmers with data-driven crop recommendations, multi-variable yield forecasts, and soil health diagnostics.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                    <a href="{{ url_for('crop_recommendation') }}" class="btn btn-light fw-bold text-success me-2">
+                        <i class="fa-solid fa-wheat-awn me-1"></i> Recommend Crop
+                    </a>
+                    <a href="{{ url_for('yield_prediction') }}" class="btn btn-outline-light">
+                        <i class="fa-solid fa-chart-line me-1"></i> Predict Yield
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Key Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fa-solid fa-wheat-awn"></i>
+            </div>
+            <div>
+                <div class="stat-title">Supported Crops</div>
+                <div class="stat-value">{{ total_crops }}</div>
+                <div class="stat-subtext text-success"><i class="fa-solid fa-seedling me-1"></i> Across 4 Categories</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="fa-solid fa-cloud-showers-heavy"></i>
+            </div>
+            <div>
+                <div class="stat-title">Avg Rainfall</div>
+                <div class="stat-value">{{ avg_rainfall }} <small style="font-size: 0.9rem;">mm</small></div>
+                <div class="stat-subtext text-primary"><i class="fa-solid fa-umbrella me-1"></i> Regional Met Data</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon amber">
+                <i class="fa-solid fa-vial"></i>
+            </div>
+            <div>
+                <div class="stat-title">Average Soil pH</div>
+                <div class="stat-value">{{ avg_ph }}</div>
+                <div class="stat-subtext text-warning"><i class="fa-solid fa-circle-check me-1"></i> Optimal Agronomic Band</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon purple">
+                <i class="fa-solid fa-database"></i>
+            </div>
+            <div>
+                <div class="stat-title">Total Records</div>
+                <div class="stat-value">{{ total_soil + total_weather }}</div>
+                <div class="stat-subtext text-secondary"><i class="fa-solid fa-layer-group me-1"></i> {{ total_soil }} Soil &bull; {{ total_weather }} Weather</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Chart.js Graphs -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-7">
+        <div class="agri-card h-100 mb-0">
+            <div class="agri-card-header">
+                <h6 class="agri-card-title">
+                    <i class="fa-solid fa-cloud-sun-rain text-success"></i> Regional Climate Observations (Weather Trends)
+                </h6>
+                <a href="{{ url_for('weather_management') }}" class="btn btn-sm btn-outline-secondary">Manage Weather</a>
+            </div>
+            <div style="height: 290px;">
+                <canvas id="weatherTrendsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="agri-card h-100 mb-0">
+            <div class="agri-card-header">
+                <h6 class="agri-card-title">
+                    <i class="fa-solid fa-dna text-success"></i> Soil Nutrient Distribution (N-P-K)
+                </h6>
+                <a href="{{ url_for('soil_management') }}" class="btn btn-sm btn-outline-secondary">Manage Soil</a>
+            </div>
+            <div style="height: 290px;">
+                <canvas id="nutrientRadarChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Machine Learning Model Quick Launch & Status -->
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="agri-card mb-0">
+            <div class="agri-card-header">
+                <h6 class="agri-card-title">
+                    <i class="fa-solid fa-microchip text-success"></i> Machine Learning Algorithms Performance Hub
+                </h6>
+                <a href="{{ url_for('reports_and_analytics') }}" class="btn btn-sm btn-agri-outline">Full Analytics Report</a>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4 col-sm-6">
+                    <div class="p-3 border rounded bg-light">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-dark" style="font-size: 0.9rem;">1. Simple Linear Regression</span>
+                            <span class="badge bg-success">R²: {{ metrics.simple_linear_regression.metrics.R2_Score if metrics.simple_linear_regression else '0.96' }}</span>
+                        </div>
+                        <small class="text-muted d-block mb-2">Predicts crop yield from precipitation volume.</small>
+                        <a href="{{ url_for('yield_prediction', tab='simple') }}" class="btn btn-sm btn-outline-success w-100">Open Predictor &rarr;</a>
+                    </div>
+                </div>
+
+                <div class="col-md-4 col-sm-6">
+                    <div class="p-3 border rounded bg-light">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-dark" style="font-size: 0.9rem;">2. Multiple Linear Regression</span>
+                            <span class="badge bg-success">R²: {{ metrics.multiple_linear_regression.metrics.R2_Score if metrics.multiple_linear_regression else '0.74' }}</span>
+                        </div>
+                        <small class="text-muted d-block mb-2">Forecasts yield (kg/ha) across 7 agronomic inputs.</small>
+                        <a href="{{ url_for('yield_prediction', tab='multiple') }}" class="btn btn-sm btn-outline-success w-100">Open Predictor &rarr;</a>
+                    </div>
+                </div>
+
+                <div class="col-md-4 col-sm-6">
+                    <div class="p-3 border rounded bg-light">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-dark" style="font-size: 0.9rem;">3. Logistic Regression</span>
+                            <span class="badge bg-primary">Acc: {{ metrics.logistic_regression.metrics.Accuracy if metrics.logistic_regression else '63.3' }}%</span>
+                        </div>
+                        <small class="text-muted d-block mb-2">Classifies soil health as Suitable or Unsuitable.</small>
+                        <a href="{{ url_for('soil_suitability') }}" class="btn btn-sm btn-outline-success w-100">Analyze Soil &rarr;</a>
+                    </div>
+                </div>
+
+                <div class="col-md-4 col-sm-6">
+                    <div class="p-3 border rounded bg-light">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-dark" style="font-size: 0.9rem;">4. KNN Classifier</span>
+                            <span class="badge bg-success">Acc: {{ metrics.knn_classification.metrics.Accuracy if metrics.knn_classification else '98.6' }}%</span>
+                        </div>
+                        <small class="text-muted d-block mb-2">Recommends top 3 best-suited crops with feature scaling.</small>
+                        <a href="{{ url_for('crop_recommendation') }}" class="btn btn-sm btn-outline-success w-100">Recommend Crops &rarr;</a>
+                    </div>
+                </div>
+
+                <div class="col-md-4 col-sm-6">
+                    <div class="p-3 border rounded bg-light">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-dark" style="font-size: 0.9rem;">5. K-Means Clustering</span>
+                            <span class="badge bg-info">Sil: {{ metrics.kmeans_clustering.metrics.Silhouette_Score if metrics.kmeans_clustering else '0.28' }}</span>
+                        </div>
+                        <small class="text-muted d-block mb-2">Discovers agro-climatic clusters & condition zones.</small>
+                        <a href="{{ url_for('crop_analysis') }}" class="btn btn-sm btn-outline-success w-100">Explore Clusters &rarr;</a>
+                    </div>
+                </div>
+
+                <div class="col-md-4 col-sm-6">
+                    <div class="p-3 border rounded bg-light">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-dark" style="font-size: 0.9rem;">6. Gaussian Naive Bayes</span>
+                            <span class="badge bg-primary">Acc: {{ metrics.naive_bayes_classification.metrics.Accuracy if metrics.naive_bayes_classification else '89.5' }}%</span>
+                        </div>
+                        <small class="text-muted d-block mb-2">Categorizes field into Cereals, Pulses, Fruits, Cash Crops.</small>
+                        <a href="{{ url_for('crop_analysis') }}" class="btn btn-sm btn-outline-success w-100">Classify Category &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Predictions & Recommendations Tables -->
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="agri-card mb-0">
+            <div class="agri-card-header">
+                <h6 class="agri-card-title">
+                    <i class="fa-solid fa-clock-rotate-left text-success"></i> Recent Crop Recommendations
+                </h6>
+                <a href="{{ url_for('reports_and_analytics') }}" class="btn btn-sm btn-outline-secondary">View All</a>
+            </div>
+            {% if recent_recommendations %}
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Top Match</th>
+                            <th>Confidence</th>
+                            <th>2nd & 3rd Choices</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rec in recent_recommendations %}
+                        <tr>
+                            <td><small class="text-muted">{{ rec.created_at.strftime('%b %d, %H:%M') }}</small></td>
+                            <td><span class="fw-bold text-success">{{ rec.top1_crop }}</span></td>
+                            <td><span class="badge bg-success-subtle text-success">{{ rec.top1_prob }}%</span></td>
+                            <td><small class="text-muted">{{ rec.top2_crop }} &bull; {{ rec.top3_crop }}</small></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-4 mb-0">No crop recommendations yet. <a href="{{ url_for('crop_recommendation') }}">Run one now!</a></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="agri-card mb-0">
+            <div class="agri-card-header">
+                <h6 class="agri-card-title">
+                    <i class="fa-solid fa-chart-line text-success"></i> Recent Yield Predictions
+                </h6>
+                <a href="{{ url_for('reports_and_analytics') }}" class="btn btn-sm btn-outline-secondary">View All</a>
+            </div>
+            {% if recent_predictions %}
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Model Used</th>
+                            <th>Rainfall</th>
+                            <th>Yield Forecast</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pred in recent_predictions %}
+                        <tr>
+                            <td><small class="text-muted">{{ pred.created_at.strftime('%b %d, %H:%M') }}</small></td>
+                            <td><span class="badge bg-light text-dark border">{{ pred.model_type }}</span></td>
+                            <td>{{ pred.rainfall }} mm</td>
+                            <td><span class="fw-bold text-success">{{ pred.predicted_yield }} kg/ha</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-4 mb-0">No yield predictions recorded yet. <a href="{{ url_for('yield_prediction') }}">Make a prediction!</a></p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    fetch('/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            // 1. Weather Trends Line Chart
+            const ctxWeather = document.getElementById('weatherTrendsChart').getContext('2d');
+            new Chart(ctxWeather, {
+                type: 'line',
+                data: {
+                    labels: data.weather.labels,
+                    datasets: [
+                        {
+                            label: 'Rainfall (mm)',
+                            data: data.weather.rainfalls,
+                            borderColor: '#0284c7',
+                            backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                            yAxisID: 'yRain',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Temperature (°C)',
+                            data: data.weather.temperatures,
+                            borderColor: '#e76f51',
+                            backgroundColor: 'transparent',
+                            yAxisID: 'yTemp',
+                            borderDash: [4, 4],
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        yRain: {
+                            type: 'linear',
+                            position: 'left',
+                            title: { display: true, text: 'Rainfall (mm)' }
+                        },
+                        yTemp: {
+                            type: 'linear',
+                            position: 'right',
+                            title: { display: true, text: 'Temp (°C)' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+
+            // 2. Nutrients Radar Chart
+            const ctxRadar = document.getElementById('nutrientRadarChart').getContext('2d');
+            new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: ['Nitrogen (N)', 'Phosphorus (P)', 'Potassium (K)'],
+                    datasets: [
+                        {
+                            label: 'Current Field Average',
+                            data: [data.nutrients.N, data.nutrients.P, data.nutrients.K],
+                            backgroundColor: 'rgba(45, 106, 79, 0.25)',
+                            borderColor: '#2d6a4f',
+                            pointBackgroundColor: '#2d6a4f'
+                        },
+                        {
+                            label: 'Standard Benchmark Ideal',
+                            data: [75, 45, 45],
+                            backgroundColor: 'rgba(233, 196, 106, 0.2)',
+                            borderColor: '#e9c46a',
+                            borderDash: [5, 5],
+                            pointBackgroundColor: '#e9c46a'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            suggestedMin: 0,
+                            suggestedMax: 120
+                        }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error("Could not load stats API:", err));
+});
+</script>
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+
+{% block title %}Soil Management | Smart Agriculture{% endblock %}
+{% block page_title %}Soil Nutrient & Record Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <h4 class="fw-bold mb-1">Soil Quality & Nutrient Records</h4>
+            <p class="text-muted mb-0">Record, update, and monitor field soil samples (pH, Nitrogen, Phosphorus, Potassium).</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-agri" data-bs-toggle="modal" data-bs-target="#addSoilModal">
+                <i class="fa-solid fa-plus me-1"></i> Add Soil Record
+            </button>
+            <a href="{{ url_for('export_soil_csv') }}" class="btn btn-outline-secondary">
+                <i class="fa-solid fa-download me-1"></i> Export CSV
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Soil Records Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="agri-card mb-0">
+            <div class="agri-card-header">
+                <h6 class="agri-card-title">
+                    <i class="fa-solid fa-flask-vial text-success"></i> Registered Soil Samples ({{ records|length }})
+                </h6>
+            </div>
+            {% if records %}
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Field Location</th>
+                            <th>Soil Type</th>
+                            <th>Soil pH</th>
+                            <th>Nitrogen (N)</th>
+                            <th>Phosphorus (P)</th>
+                            <th>Potassium (K)</th>
+                            <th>Fertility Status</th>
+                            <th>Recorded Date</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records %}
+                        {% set status_text, status_class = record.fertility_status() %}
+                        <tr>
+                            <td><span class="text-muted fw-bold">#{{ record.id }}</span></td>
+                            <td>
+                                <strong class="text-dark">{{ record.location }}</strong>
+                                {% if record.notes %}
+                                <small class="d-block text-muted" style="font-size: 0.75rem;">{{ record.notes }}</small>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-light text-dark border">{{ record.soil_type }}</span></td>
+                            <td>
+                                <span class="fw-bold {% if 6.0 <= record.ph <= 7.5 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ record.ph }}
+                                </span>
+                            </td>
+                            <td>{{ record.nitrogen }} <small class="text-muted">mg/kg</small></td>
+                            <td>{{ record.phosphorus }} <small class="text-muted">mg/kg</small></td>
+                            <td>{{ record.potassium }} <small class="text-muted">mg/kg</small></td>
+                            <td><span class="badge bg-{{ status_class }}-subtle text-{{ status_class }}">{{ status_text }}</span></td>
+                            <td><small class="text-muted">{{ record.created_at.strftime('%Y-%m-%d') }}</small></td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal" data-bs-target="#editModal{{ record.id }}">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <form action="{{ url_for('delete_soil_record', record_id=record.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this soil record permanently?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+
+                        <!-- Edit Modal for Record #{{ record.id }} -->
+                        <div class="modal fade" id="editModal{{ record.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <form action="{{ url_for('edit_soil_record', record_id=record.id) }}" method="POST">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title fw-bold">Edit Soil Record #{{ record.id }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Field / Location Name</label>
+                                                <input type="text" name="location" class="form-control" value="{{ record.location }}" required>
+                                            </div>
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-6">
+                                                    <label class="form-label">Soil pH (0 - 14)</label>
+                                                    <input type="number" step="0.1" name="ph" class="form-control" value="{{ record.ph }}" min="0" max="14" required>
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label">Soil Type</label>
+                                                    <select name="soil_type" class="form-select">
+                                                        <option value="Loamy" {% if record.soil_type == 'Loamy' %}selected{% endif %}>Loamy</option>
+                                                        <option value="Clay Loam" {% if record.soil_type == 'Clay Loam' %}selected{% endif %}>Clay Loam</option>
+                                                        <option value="Sandy Loam" {% if record.soil_type == 'Sandy Loam' %}selected{% endif %}>Sandy Loam</option>
+                                                        <option value="Alluvial" {% if record.soil_type == 'Alluvial' %}selected{% endif %}>Alluvial</option>
+                                                        <option value="Black Soil" {% if record.soil_type == 'Black Soil' %}selected{% endif %}>Black Soil</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-4">
+                                                    <label class="form-label">Nitrogen (N)</label>
+                                                    <input type="number" step="0.1" name="nitrogen" class="form-control" value="{{ record.nitrogen }}" min="0" required>
+                                                </div>
+                                                <div class="col-4">
+                                                    <label class="form-label">Phosphorus (P)</label>
+                                                    <input type="number" step="0.1" name="phosphorus" class="form-control" value="{{ record.phosphorus }}" min="0" required>
+                                                </div>
+                                                <div class="col-4">
+                                                    <label class="form-label">Potassium (K)</label>
+                                                    <input type="number" step="0.1" name="potassium" class="form-control" value="{{ record.potassium }}" min="0" required>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Agronomic Notes</label>
+                                                <textarea name="notes" class="form-control" rows="2">{{ record.notes or '' }}</textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-agri">Save Changes</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fa-solid fa-flask-vial fa-3x text-muted mb-3"></i>
+                <h6 class="text-muted">No soil records found in the database.</h6>
+                <button class="btn btn-agri mt-2" data-bs-toggle="modal" data-bs-target="#addSoilModal">
+                    <i class="fa-solid fa-plus me-1"></i> Add Your First Record
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Soil Record Modal -->
+<div class="modal fade" id="addSoilModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="{{ url_for('add_soil_record') }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-solid fa-plus-circle text-success me-1"></i> Add New Soil Sample
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Field / Location Name</label>
+                        <input type="text" name="location" class="form-control" placeholder="e.g. South Paddy Plot 3" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Soil pH (0 - 14)</label>
+                            <input type="number" step="0.1" name="ph" class="form-control" placeholder="e.g. 6.5" min="0" max="14" required>
+                            <small class="text-muted" style="font-size: 0.72rem;">Optimal: 6.0 - 7.5</small>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Soil Type</label>
+                            <select name="soil_type" class="form-select">
+                                <option value="Loamy">Loamy</option>
+                                <option value="Clay Loam">Clay Loam</option>
+                                <option value="Sandy Loam">Sandy Loam</option>
+                                <option value="Alluvial">Alluvial</option>
+                                <option value="Black Soil">Black Soil</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <label class="form-label">Nitrogen (N)</label>
+                            <input type="number" step="0.1" name="nitrogen" class="form-control" placeholder="e.g. 80" min="0" required>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">Phosphorus (P)</label>
+                            <input type="number" step="0.1" name="phosphorus" class="form-control" placeholder="e.g. 45" min="0" required>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">Potassium (K)</label>
+                            <input type="number" step="0.1" name="potassium" class="form-control" placeholder="e.g. 40" min="0" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Field Notes / Observations</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="e.g. Soil treated with organic compost 2 weeks ago"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-agri">Save to Database</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
